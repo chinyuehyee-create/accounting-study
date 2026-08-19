@@ -3,31 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會計學習追蹤系統</title>
+    <title>會計與 Excel 4週實戰學習追蹤平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-        <h1 class="text-2xl font-bold mb-4 text-center">4週會計學習計畫</h1>
-        <div id="tasks" class="space-y-3">
-            <!-- Day 1 -->
-            <div class="flex items-center space-x-3">
-                <input type="checkbox" id="d1" class="w-5 h-5">
-                <label for="d1">Day 1: 複習借貸法則 (Dr/Cr) 與中英術語對照</label>
-            </div>
-            <!-- 可以繼續增加 Day 2-28 -->
-        </div>
-        <p class="mt-6 text-sm text-gray-500 italic">提示：下週一開始執行，加油！</p>
-    </div>
     <script>
-        // 自動載入勾選狀態
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            cb.checked = localStorage.getItem(cb.id) === 'true';
-            cb.addEventListener('change', () => {
-                localStorage.setItem(cb.id, cb.checked);
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">會計與 Excel 職前衝刺平台</h1>
+                    <p class="text-xs text-slate-500">專為玥瑜量身打造的 4 週自學追蹤助手（含英文會計對照）</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 bg-slate-100 px-4 py-2 rounded-xl text-sm">
+                <div>總進度：<span id="overall-progress" class="font-bold text-brand-600">0%</span></div>
+                <div class="w-24 bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-brand-600 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+        
+        <!-- Left 2 Cols: Daily Study Plan & Tasks -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Today's Action Card -->
+            <section class="bg-gradient-to-br from-brand-600 to-emerald-700 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                <div class="absolute right-0 top-0 translate-x-6 -translate-y-6 w-48 h-48 bg-white/10 rounded-full pointer-events-none"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-3">
+                        <span id="current-day-badge" class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">Day 1 學習任務</span>
+                        <span id="current-week-label" class="text-emerald-100 text-sm font-medium">第 1 週：會計基礎與中英對照</span>
+                    </div>
+                    <h2 id="today-title" class="text-2xl font-bold mb-2">載入中...</h2>
+                    <p id="today-desc" class="text-emerald-50 text-sm mb-4 leading-relaxed">載入今天的學習重點與指引...</p>
+                    <div class="flex flex-wrap gap-2 pt-2 border-t border-white/20">
+                        <span id="today-resource" class="bg-white/10 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                            📚 推薦資源：YouTube 搜尋「初級會計學 借貸法則」
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4-Week Navigation Tabs -->
+            <div class="flex overflow-x-auto pb-2 gap-2 scrollbar-none">
+                <button onclick="switchWeek(1)" id="tab-w1" class="week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-brand-600 text-white shadow-md">第 1 週：會計基礎</button>
+                <button onclick="switchWeek(2)" id="tab-w2" class="week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">第 2 週：Excel 實作</button>
+                <button onclick="switchWeek(3)" id="tab-w3" class="week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">第 3 週：實務與核銷</button>
+                <button onclick="switchWeek(4)" id="tab-w4" class="week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">第 4 週：履歷與面試</button>
+            </div>
+
+            <!-- Daily Checklists Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="week-header-title" class="text-lg font-bold text-slate-900">第 1 週任務清單</h3>
+                    <span class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">勾選完成項目即自動同步進度</span>
+                </div>
+                <div id="tasks-container" class="space-y-4">
+                    <!-- Dynamic Task Items -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Col: Daily Feedback & Adaptive Guidance -->
+        <div class="space-y-6">
+            
+            <!-- Daily Feedback Logger -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    每日學習回報與調整
+                </h3>
+                <p class="text-xs text-slate-500 mb-4">記錄你今天的心得或遇到的困難，系統將提供微調建議！</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">今天花費時間</label>
+                        <select id="log-time" class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="1">1 小時</option>
+                            <option value="2" selected>2 小時（標準建議）</option>
+                            <option value="3">3 小時以上（進度超前）</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">今天狀態 / 遇到的卡點</label>
+                        <textarea id="log-note" rows="3" placeholder="例如：英文名詞轉中文有點不習慣，或者借貸法則需要再複習..." class="w-full text-sm border border-slate-200 rounded-xl p-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    </div>
+                    <button onclick="submitDailyLog()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl text-sm transition-all shadow-md">
+                        提交今日回報與生成建議
+                    </button>
+                </div>
+            </div>
+
+            <!-- Adaptive Guidance Box -->
+            <div id="ai-advice-box" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 hidden">
+                <div class="flex items-center gap-2 mb-2 text-emerald-800 font-bold text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    動態調整教練建議
+                </div>
+                <p id="ai-advice-text" class="text-xs text-emerald-900 leading-relaxed">
+                    根據你的回報，教練正在為你分析並調整學習步調...
+                </p>
+            </div>
+
+            <!-- Quick English-Chinese Glossary Helper -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    📖 快速會計中英對照小辭典
+                </h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+                        <span class="font-medium text-slate-700">借方 / 貸方</span>
+                        <span class="text-slate-500">Debit (Dr.) / Credit (Cr.)</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+                        <span class="font-medium text-slate-700">資產 = 負債 + 權益</span>
+                        <span class="text-slate-500">Assets = Liabilities + Equity</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+                        <span class="font-medium text-slate-700">資產負債表</span>
+                        <span class="text-slate-500">Balance Sheet (B/S)</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+                        <span class="font-medium text-slate-700">綜合損益表</span>
+                        <span class="text-slate-500">Income Statement (P&L)</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // Updated Study Plan with combined Day 1: English-Chinese Accounting Terms & Debit/Credit Logic
+        const studyPlan = {
+            1: {
+                title: "第 1 週：會計基礎與中英對照總覽",
+                days: [
+                    { day: 1, title: "會計恆等式、借貸法則與中英對照 (Day 1 啟動)", desc: "結合 Assets = Liabilities + Equity、Debit (Dr.) / Credit (Cr.) 核心邏輯，並建立中英文會計名詞對照。", resource: "📚 推薦：複習借貸法則增減原則與中英對照表" },
+                    { day: 2, title: "常見會計科目中英對照與分類練習", desc: "深化 Cash (現金), A/R (應收), A/P (應付), Expenses (費用) 等台灣會計科目對應。", resource: "💡 提示：善用本頁右側的小辭典速查" },
+                    { day: 3, title: "簡易分錄與交易分析 (Journal Entries)", desc: "練習基礎英文底子轉化為台灣會計分錄的寫法。", resource: "📚 推薦：練習 5 題簡單的會計分錄題" },
+                    { day: 4, title: "簡易傳票分錄實作 (一)", desc: "模擬公司日常買辦文具、支付水電費的會計分錄編寫。", resource: "🔍 參考：YouTube 搜尋「會計分錄 實務範例」" },
+                    { day: 5, title: "簡易傳票分錄實作 (二)", desc: "練習應收帳款收現與應付帳款付現的交易紀錄。", resource: "🔍 參考：複習前幾天不熟練的借貸方向" },
+                    { day: 6, title: "第 1 週觀念總結與自我檢測", desc: "用腦袋順過一次：一筆交易發生後，從原始憑證到寫出分錄的全過程。", resource: "🎯 目標：能流暢解釋 Debit 與 Credit 的增減邏輯" },
+                    { day: 7, title: "週末沉澱與休息", desc: "好好休息，準備迎接第二週的 Excel 實作工具訓練！", resource: "☕ 放鬆心情，維持學習動力" }
+                ]
+            },
+            2: {
+                title: "第 2 週：職場必備 Excel 與會計表格實作",
+                days: [
+                    { day: 8, title: "Excel 基礎與財務常用函數介紹", desc: "熟悉 Excel 基本排版、儲存格格式設定（設定為會計專用格式）。", resource: "💻 推薦：YouTube 搜尋「Papaya 電腦教室 Excel 基礎」" },
+                    { day: 9, title: "攻克 VLOOKUP 函數", desc: "學習 VLOOKUP 資料對照，這在會計核對商品編號或客戶資料時極為重要。", resource: "💻 推薦：跟著 Papaya 影片動手開空白 Excel 練習" },
+                    { day: 10, title: "掌握 SUMIFS 條件加總", desc: "學會根據不同會計科目或月份進行精準的金額加總。", resource: "💻 推薦：練習製作帶有條件加總的收支表" },
+                    { day: 11, title: "樞紐分析表 (Pivot Table) 實戰", desc: "利用樞紐分析快速將龐大活動或支出數據按類別加總歸納。", resource: "💻 推薦： YouTube 搜尋「Excel 樞紐分析表 教學」" },
+                    { day: 12, title: "實作專案一：零用金日記帳 (Petty Cash)", desc: "親手在 Excel 做出包含日期、摘要、收入、支出、餘額的零用金表格。", resource: "📊 實作：對照大學助理時期的記帳邏輯" },
+                    { day: 13, title: "實作專案二：傳票與收支月報表", desc: "運用本週學到的函數，做出自動加總的月度收支匯總表。", resource: "📊 實作：讓報表具備專業的格線與會計格式" },
+                    { day: 14, title: "第 2 週成果驗收", desc: "確認自己是否能流暢操作 VLOOKUP 與樞紐分析表。", resource: "🎯 目標：能獨立產出乾淨漂亮的 Excel 財務小表" }
+                ]
+            },
+            3: {
+                title: "第 3 週：熟悉企業會計與核銷實務",
+                days: [
+                    { day: 15, title: "理解憑證合規性（發票與收據）", desc: "複習統一發票、收據、差旅費報支單的審核要點，呼應你過去在學校的核銷經驗。", resource: "🧾 思考：過去當助理時審核憑證的標準在哪裡？" },
+                    { day: 16, title: "雲端會計系統概念導覽", desc: "了解中小企業如何使用套裝或雲端會計軟體（如鼎新 A1 等）來記帳。", resource: "☁️ 推薦：YouTube 搜尋「鼎新 A1 會計 系統操作」" },
+                    { day: 17, title: "傳票登打實務流程觀摩", desc: "觀察實務上會計人員如何把紙本發票登打輸入進系統中。", resource: "☁️ 推薦：觀看雲端 ERP 軟體的傳票輸入示範畫面" },
+                    { day: 18, title: "零用金撥補與管理作業", desc: "了解企業如何管理零用金、盤點與定期撥補的會計處理。", resource: "🔍 參考：零用金保管與查核注意事項" },
+                    { day: 19, title: "對帳與勾稽作業觀念", desc: "銀行存款餘額調節表與應收/應付帳款對帳的基本概念。", resource: "🔍 參考：會計助理日常對帳的核心重點" },
+                    { day: 20, title: "第 3 週實務知識整合", desc: "將「憑證 ➔ 傳票 ➔ 系統登錄 ➔ 報表產出」的動線在腦海中跑過一遍。", resource: "🎯 目標：理解公司帳務的完整生命週期" },
+                    { day: 21, title: "週末調整與休息", desc: "本週進入尾聲，準備進入最後衝刺期！", resource: "🌿 散步放鬆，迎接最後一週" }
+                ]
+            },
+            4: {
+                title: "第 4 週：履歷整合與模擬面試",
+                days: [
+                    { day: 22, title: "履歷內容精修與亮點聚焦", desc: "將商科背景、高中會計證照、大學助理核銷經驗完美融合進履歷中。", resource: "📄 參考前面為你撰寫的專業會計履歷版本" },
+                    { day: 23, title: "準備必答題：非會計系怎麼轉職？", desc: "練習自信流暢地回答：「雖然我讀圖資系，但我有高中會計底子與實務核銷經驗...」", resource: "🗣️ 練習：對著鏡子順過自我介紹 3 遍" },
+                    { day: 24, title: "準備必答題：Excel 與系統操作能力", desc: "說明自己已經自主加強了 Excel 進階函數與樞紐分析，能快速上手。", resource: "🗣️ 練習：展現積極主動的自學態度" },
+                    { day: 25, title: "投遞履歷與職缺鎖定", desc: "開始在求職平台搜尋「會計助理」、「財務行政」並投遞履歷。", resource: "🚀 行動：踏出勇敢的第一步！" },
+                    { day: 26, title: "模擬面試問題 Q&A 演練", desc: "針對會計主管常問的細心度、壓力處理進行心態建設。", resource: "💡 提示：強調你的圖資系細心與外語優勢" },
+                    { day: 27, title: "複習不熟的會計觀念", desc: "針對前幾週覺得卡住的地方再次溫習，保持最佳狀態。", resource: "🎯 目標：帶著百分之百的信心面對面試邀約" },
+                    { day: 28, title: "蓄勢待發！迎接職場新篇章", desc: "恭喜完成 4 週全面衝刺！", resource: "🎉 你已經準備好成為專業的會計小幫手了！" }
+                ]
+            }
+        };
+
+        let currentWeek = 1;
+        let currentActiveDay = 1;
+        let completedDays = JSON.parse(localStorage.getItem('accounting_completed_days')) || [];
+
+        function initApp() {
+            renderWeek(currentWeek);
+            updateOverallProgress();
+            selectDay(1);
+        }
+
+        function switchWeek(weekNum) {
+            currentWeek = weekNum;
+            document.querySelectorAll('.week-tab').forEach((tab, index) => {
+                const w = index + 1;
+                if (w === weekNum) {
+                    tab.className = "week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-brand-600 text-white shadow-md";
+                } else {
+                    tab.className = "week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+                }
             });
-        });
+            renderWeek(weekNum);
+        }
+
+        function renderWeek(weekNum) {
+            const weekData = studyPlan[weekNum];
+            document.getElementById('week-header-title').innerText = weekData.title;
+            const container = document.getElementById('tasks-container');
+            container.innerHTML = '';
+
+            weekData.days.forEach(d => {
+                const isCompleted = completedDays.includes(d.day);
+                const isCurrent = d.day === currentActiveDay;
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all flex items-center justify-between gap-4 ${isCompleted ? 'bg-emerald-50/50 border-emerald-200' : (isCurrent ? 'bg-brand-50/30 border-brand-300 ring-2 ring-brand-500/20' : 'bg-white border-slate-200 hover:border-slate-300')}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-start gap-3.5 flex-grow">
+                        <input type="checkbox" id="chk-${d.day}" ${isCompleted ? 'checked' : ''} class="mt-1 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                        <div class="cursor-pointer flex-grow" onclick="selectDay(${d.day})">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-400">Day ${d.day}</span>
+                                <h4 class="text-sm font-bold ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}">${d.title}</h4>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${d.desc}</p>
+                        </div>
+                    </div>
+                    <button onclick="selectDay(${d.day})" class="text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors whitespace-nowrap">
+                        查看詳情
+                    </button>
+                `;
+                
+                container.appendChild(card);
+
+                // Attach explicit change listener directly to the checkbox element
+                const checkbox = card.querySelector(`#chk-${d.day}`);
+                checkbox.addEventListener('change', (e) => {
+                    toggleDay(d.day, e);
+                });
+            });
+        }
+
+        function selectDay(dayNum) {
+            currentActiveDay = dayNum;
+            let w = 1;
+            if (dayNum >= 8 && dayNum <= 14) w = 2;
+            if (dayNum >= 15 && dayNum <= 21) w = 3;
+            if (dayNum >= 22) w = 4;
+
+            if (w !== currentWeek) {
+                currentWeek = w;
+                document.querySelectorAll('.week-tab').forEach((tab, index) => {
+                    const tabW = index + 1;
+                    tab.className = tabW === w ? "week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-brand-600 text-white shadow-md" : "week-tab px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+                });
+                document.getElementById('week-header-title').innerText = studyPlan[w].title;
+            }
+
+            const dayData = studyPlan[w].days.find(d => d.day === dayNum);
+            if (dayData) {
+                document.getElementById('current-day-badge').innerText = `Day ${dayData.day} 學習任務`;
+                document.getElementById('current-week-label').innerText = studyPlan[w].title;
+                document.getElementById('today-title').innerText = dayData.title;
+                document.getElementById('today-desc').innerText = dayData.desc;
+                document.getElementById('today-resource').innerHTML = dayData.resource;
+            }
+            renderWeek(currentWeek);
+        }
+
+        function toggleDay(dayNum, event) {
+            event.stopPropagation();
+            if (completedDays.includes(dayNum)) {
+                completedDays = completedDays.filter(d => d !== dayNum);
+            } else {
+                completedDays.push(dayNum);
+            }
+            localStorage.setItem('accounting_completed_days', JSON.stringify(completedDays));
+            renderWeek(currentWeek);
+            updateOverallProgress();
+        }
+
+        function updateOverallProgress() {
+            const totalDays = 28;
+            const completedCount = completedDays.length;
+            const percent = Math.round((completedCount / totalDays) * 100);
+            document.getElementById('overall-progress').innerText = percent + '%';
+            document.getElementById('progress-bar').style.width = percent + '%';
+        }
+
+        function submitDailyLog() {
+            const timeSpent = document.getElementById('log-time').value;
+            const note = document.getElementById('log-note').value.trim();
+            const adviceBox = document.getElementById('ai-advice-box');
+            const adviceText = document.getElementById('ai-advice-text');
+
+            adviceBox.classList.remove('hidden');
+
+            let feedback = `收到！你今天回報花費了 ${timeSpent} 小時學習。`;
+            if (note.length > 0) {
+                feedback += ` 針對你提到的「${note}」：`;
+                if (note.includes('英文') || note.includes('專有名詞') || note.includes('術語')) {
+                    feedback += ` 這是正常的適應期！因為你過去在馬來西亞是用英文學會計，建議把專有名詞（如 Debit / Credit）與台灣中文名詞對照著看。會計的邏輯全球共通，多看幾次就會很上手！`;
+                } else if (note.includes('Excel') || note.includes('函數') || note.includes('樞紐')) {
+                    feedback += ` Excel 剛開始操作時卡住是正常的！建議搭配 Papaya 影片，把影片暫停、跟著畫面一個格子一個格子敲出來。加油！`;
+                } else {
+                    feedback += ` 你的學習步調很穩健！如果遇到觀念卡住，隨時可以放慢腳步複習前一天的重點。`;
+                }
+            } else {
+                feedback += ` 保持這個節奏每天持續累積，1 個月後你絕對會看到明顯的實力蛻變！`;
+            }
+
+            adviceText.innerText = feedback;
+            document.getElementById('log-note').value = '';
+        }
+
+        window.onload = initApp;
     </script>
 </body>
 </html>
